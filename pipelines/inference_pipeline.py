@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 import pandas as pd
-
+import pytz
 import src.config as config
 from src.inference import (
     get_feature_store,
@@ -12,7 +12,10 @@ from src.inference import (
 # Get the current datetime64[us, Etc/UTC]
 # for number in range(22, 24 * 29):
 # current_date = pd.Timestamp.now(tz="Etc/UTC") - timedelta(hours=number)
-current_date = pd.Timestamp.now(tz="Etc/UTC")
+est = pytz.timezone("America/New_York")
+
+# Get current timestamp in EST
+current_date = pd.Timestamp.now(tz=est)
 feature_store = get_feature_store()
 
 # read time-series data from the feature store
@@ -39,8 +42,7 @@ model = load_model_from_registry()
 
 predictions = get_model_predictions(model, features)
 predictions["pickup_hour"] = current_date.ceil("h")
-print(predictions.sort_values(by=['pickup_hour'], ascending=False).head(30))
-
+print(predictions)
 
 feature_group = get_feature_store().get_or_create_feature_group(
     name=config.FEATURE_GROUP_MODEL_PREDICTION,

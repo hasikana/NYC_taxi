@@ -2,16 +2,14 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta, timezone
-from os import getcwd
 
 import hopsworks
 import pandas as pd
-# print(getcwd())
-# sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
+import pytz
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "..")))
 import src.config as config
 from src.data_utils import fetch_batch_raw_data, transform_raw_data_into_ts_data
 
-# print(getcwd())
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,  # Set the logging level
@@ -24,8 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 # Step 1: Get the current date and time (timezone-aware)
-current_date = pd.to_datetime(datetime.now(timezone.utc)).ceil("h")
-logger.info(f"Current date and time (UTC): {current_date}")
+est = pytz.timezone("America/New_York")
+
+# Get current EST time and round up to the next hour
+current_date = pd.to_datetime(datetime.now(est)).ceil("h")
+logger.info(f"Current date and time (EST): {current_date}")
 
 # Step 2: Define the data fetching range
 fetch_data_to = current_date
@@ -43,17 +44,17 @@ ts_data = transform_raw_data_into_ts_data(rides)
 logger.info(
     f"Transformation complete. Number of records in time-series data: {len(ts_data)}"
 )
-current_hour = (pd.Timestamp.now(tz="Etc/UTC") - timedelta(hours=12)).floor("h")
-current_hour_str = current_hour.strftime('%Y-%m-%d %H:%M:%S')
-print(current_hour)
-print(ts_data.sort_values(by=["pickup_hour"], ascending=False))
+# current_hour = (pd.Timestamp.now(tz="Etc/UTC") - timedelta(hours=12)).floor("h")
+# current_hour_str = current_hour.strftime('%Y-%m-%d %H:%M:%S')
+# print(current_hour)
+# print(ts_data.sort_values(by=["pickup_hour"], ascending=False))
 # Step 5: Connect to the Hopsworks project
 logger.info("Connecting to Hopsworks project...")
 project = hopsworks.login(
     project=config.HOPSWORKS_PROJECT_NAME, api_key_value=config.HOPSWORKS_API_KEY
 )
 logger.info("Connected to Hopsworks project.")
-print(ts_data)
+
 # Step 6: Connect to the feature store
 logger.info("Connecting to the feature store...")
 feature_store = project.get_feature_store()
